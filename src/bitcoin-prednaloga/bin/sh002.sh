@@ -1,7 +1,7 @@
 #!/bin/bash
 ./bitcoin-cli -regtest generate 150
 #store text from file to variable data and convert it to clean HEX form
-data=$(xxd -p -u data.txt)
+data=$(echo $1 | xxd -p -u)
 #create new transaction and add data to it, then store it
 transaction=$(./bitcoin-cli -regtest createrawtransaction "[]" "{\"data\":\"$data\"}")
 #echo $transaction
