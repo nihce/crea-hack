@@ -13,69 +13,63 @@ const shell = require('shelljs');
 
 
 //ENDPOINTS
-//parsing from JSON to object when receiving a request
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false}));
 
-app.get('/generateBlock', function (req, res) {
-    const tmp = shell.exec('bin/bitcoin-cli -regtest generate 1', {silent:true}).stdout;
-    console.log(tmp);
-    res.send(tmp);
+// 0=PACKET INFO
+// 1=PACKET TRANSFER
+
+app.post('/postPacketInfo', function (req, res) {
+  const packetId = req.body.packetId;
+  const temperature = req.body.temperature;
+  const data = "1" + packetId + temperature;
+
+  generateNewTransaction(data);
+  setTimeout(generateBlock(), 3000);
+
+  res.json({note: 'OK'});
 });
 
-app.post('/generateNewTransaction', function (req, res) {
-  const data = req.body.data;
-  // console.log(data);  
-  const str = 'bin/generate-new-transaction.sh ' + ascii_to_hexa(data);
-  // console.log(str);
-  const tmp = shell.exec(str, {silent:false}).stdout;
-  res.send(tmp);
+app.post('/getPacketInfo', function (req, res) {
+  const packetId = req.body.packetId;
+
+  getTransactionById(packetId);
+
+  res.json({note: 'OK'});
 });
 
-app.post('/getTransaction', function (req, res) {
-  const transactionId = req.body.data;
-  const str = 'bin/bitcoin-cli -regtest gettransaction ' + transactionId;
-  const tmp = shell.exec(str, {silent:false}).stdout;
-  res.send(tmp);
+app.post('/packetTransfer', function (req, res) {
+  const packetId = req.body.packetId;
+  const receiverId = req.body.receiverId;
+  const data = "0" + packetId + receiverId;
+
+  generateNewTransaction(data);
+  setTimeout(generateBlock(), 3000);
+
+
+  res.json({note: 'OK'});
 });
-
-
-
-
-//
-// app.post('/broadcastTransaction', function (req, res) {
-//     const newTransaction = mihicoin.createNewTransaction(req.body.amount, req.body.sender, req.body.recipient);
-//     mihicoin.addTransactionToMempool(newTransaction);
-//     const multiplePromises = [];
-//     mihicoin.nodes.forEach(node => {
-//         const singlePromise = {
-//             uri: node + '/receiveTransaction',
-//             method: 'POST',
-//             body: newTransaction,
-//             json: true,
-//             simple: false
-//         };
-//         multiplePromises.push(rp(singlePromise));
-//     });
-//     Promise.allSettled(multiplePromises) //Promise.all would break execution if one of nodes is no longer online
-//     .then(data => {
-//         res.json({note: 'OK'});
-//     }).catch((err) => {console.log(err)});
-// });
-//
-// app.post('/receiveTransaction', function (req, res) {
-//     const newTransaction = req.body;
-//     mihicoin.addTransactionToMempool(newTransaction);
-//     res.json({note: 'OK'})
-// });
 
 app.listen(port, function() {
     console.log(`This server is running on: localhost/${port}`);
 });
 
 //FUNCTIONS
-function getRandomInt(max) {
-  return Math.floor(Math.random() * Math.floor(max));
+function generateBlock() {
+  const tmp = shell.exec('bin/bitcoin-cli -regtest generate 1', {silent:true}).stdout;
+  return tmp;
+}
+
+function generateNewTransaction(data) {
+  const str = 'bin/generate-new-transaction.sh ' + ascii_to_hexa(data);
+  const tmp = shell.exec(str, {silent:false}).stdout;
+  return tmp;
+}
+
+function getTransactionById(transactionId) {
+  const str = 'bin/bitcoin-cli -regtest gettransaction ' + transactionId;
+  const tmp = shell.exec(str, {silent:false}).stdout;
+  return tmp;
 }
 
 //ascii_to_hexa('12')
@@ -91,7 +85,7 @@ function ascii_to_hexa(str)
    }
 
    //hex_to_ascii('3132')
-   function hex_to_ascii(str1)
+function hex_to_ascii(str1)
  {
 	var hex  = str1.toString();
 	var str = '';
