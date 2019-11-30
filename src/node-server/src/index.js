@@ -11,6 +11,8 @@ const shell = require('shelljs');
 
 //CONSTANTS
 
+//SIMULATED DATABASE
+let listOfTransactions = []; 
 
 //ENDPOINTS
 app.use(bodyParser.json());
@@ -24,17 +26,44 @@ app.post('/postPacketInfo', function (req, res) {
   const temperature = req.body.temperature;
   const data = "1" + packetId + temperature;
 
-  generateNewTransaction(data);
-  setTimeout(generateBlock(), 3000);
+  const parsed = JSON.parse(generateNewTransaction(data));
+  const txid = '' + parsed.txid;
+  listOfTransactions.push(txid);
+
+  setTimeout(function() {
+    generateBlock()
+  }, 3000);
 
   res.json({note: 'OK'});
 });
 
 app.post('/getPacketInfo', function (req, res) {
   const packetId = req.body.packetId;
+  
+  var obj = new Object();
+  obj.name = "Raj";
+  obj.age  = 32;
+  obj.married = false;
+  var jsonString= JSON.stringify(obj);
 
-  getTransactionById(packetId);
+  listOfTransactions.forEach(txid => {
+    const parsed = JSON.parse(getTransactionById(packetId));
+    const hex = '' + parsed.vout[0].scriptPubKey.hex.slice(6);
+    const ascii = hex_to_ascii(hex);
+    // console.log(ascii);
+    if (ascii.charAt(0)) {
+      obj.kind = "Packet Info";
+    } else {
+      obj.kind = "Packet Transfer"
+    }
+    obj.kind = ;
+    obj.age  = 32;
+    obj.married = false;
+  });
 
+
+  console.log("getPacketInfo called");
+  
   res.json({note: 'OK'});
 });
 
@@ -43,15 +72,20 @@ app.post('/packetTransfer', function (req, res) {
   const receiverId = req.body.receiverId;
   const data = "0" + packetId + receiverId;
 
-  generateNewTransaction(data);
-  setTimeout(generateBlock(), 3000);
+  const parsed = JSON.parse(generateNewTransaction(data));
+  const txid = '' + parsed.txid;
+  listOfTransactions.push(txid);
+
+  setTimeout(function() {
+    generateBlock()
+  }, 3000);
 
 
   res.json({note: 'OK'});
 });
 
 app.listen(port, function() {
-    console.log(`This server is running on: localhost/${port}`);
+  console.log(`This server is running on: localhost/${port}`);
 });
 
 //FUNCTIONS
@@ -76,8 +110,7 @@ function getTransactionById(transactionId) {
 function ascii_to_hexa(str)
   {
 	var arr1 = [];
-	for (var n = 0, l = str.length; n < l; n ++) 
-     {
+	for (var n = 0, l = str.length; n < l; n ++) {
 		var hex = Number(str.charCodeAt(n)).toString(16);
 		arr1.push(hex);
 	 }
@@ -94,3 +127,5 @@ function hex_to_ascii(str1)
 	}
 	return str;
  }
+
+
