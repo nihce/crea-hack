@@ -17,11 +17,6 @@ const shell = require('shelljs');
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false}));
 
-app.get('/generate150Blocks', function (req, res) {
-  const tmp = shell.exec('bin/bitcoin-cli -regtest generate ' + 150, {silent:true}).stdout;
-  res.json({note: tmp});
-});
-
 app.get('/generateBlock', function (req, res) {
     const tmp = shell.exec('bin/bitcoin-cli -regtest generate 1', {silent:true}).stdout;
     console.log(tmp);

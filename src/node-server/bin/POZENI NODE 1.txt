@@ -1,0 +1,4 @@
+POZENI TOLE DA STARTAS NODE
+BITI MORAS ZNOTRAJ BIN
+
+./bitcoind -regtest -txindex -printtoconsole

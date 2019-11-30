@@ -1,0 +1,4 @@
+ODPRI NOV ZAVIHEK IN POZENI TOLE
+S TEM DOBIS BITCOINE ZA ZAPRAVLAT
+
+./bitcoin-cli -regtest generate 150
