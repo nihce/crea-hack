@@ -10,6 +10,9 @@ const fs = require('fs');
 const shell = require('shelljs');
 
 //CONSTANTS
+const LENGTH_OF_TIMESTAMP = 10;
+const START_TIMESTAMP = 4;
+const END_TIMESTAMP = START_TIMESTAMP + LENGTH_OF_TIMESTAMP;
 
 //SIMULATED DATABASE
 let listOfTransactions = []; 
@@ -22,9 +25,13 @@ app.use(bodyParser.urlencoded({ extended: false}));
 // 1=PACKET TRANSFER
 
 app.post('/postPacketInfo', function (req, res) {
-  const packetId = req.body.packetId;
-  const temperature = req.body.temperature;
-  const data = "1" + packetId + temperature;
+  // const packetId = req.body.packetId;
+  // const temperature = req.body.temperature;
+  // const timestamp = req.body.timestamp;
+  const packetId = "007";
+  const temperature = rand(4,9);
+  const timestamp = Math.floor(Date.now() / 1000);
+  const data = "1" + packetId + timestamp + temperature;
 
   const parsed = JSON.parse(generateNewTransaction(data));
   const txid = '' + parsed.txid;
@@ -40,7 +47,8 @@ app.post('/postPacketInfo', function (req, res) {
 app.post('/getPacketInfo', function (req, res) {
   const packetId = req.body.packetId;
   let response = "Packet Number: " + packetId;
-  response += ",";
+  response += ", ";
+  let temperatureBreach = 0;
 
   if (listOfTransactions && listOfTransactions.length) {    
     listOfTransactions.forEach(txid => {      
@@ -48,16 +56,27 @@ app.post('/getPacketInfo', function (req, res) {
       const hex = '' + parsed.vout[0].scriptPubKey.hex.slice(6);
       const ascii = hex_to_ascii(hex);
       if (parseInt(ascii.charAt(0))) {
-        response += "Packet Info: ";
-        response += ascii.substring(4, ascii.length);
-        response += ",";
+        const temperature = ascii.substring(END_TIMESTAMP, ascii.length);
+
+        if (temperature > 8.0) {
+          temperatureBreach = 1;
+        }
+        const timestamp = unix_to_date(ascii.substring(START_TIMESTAMP, END_TIMESTAMP));
+        response += "Packet Temperature: ";
+        response += temperature;
+        response += " [" + timestamp + "]";
+        response += ", ";
       } else {
-        response += "Packet Transfer: ";
-        response += ascii.substring(4, ascii.length);
-        response += ",";
+        const temperature = ascii.substring(END_TIMESTAMP, ascii.length);
+        const timestamp = unix_to_date(ascii.substring(START_TIMESTAMP, END_TIMESTAMP));
+        response += "Packet Transfared To: ";
+        response += temperature;
+        response += " [" + timestamp + "]";
+        response += ", ";
       }
     });
   }
+  response = response + "temperatureBreach: " + temperatureBreach;
   // console.log("getPacketInfo called with: " + packetId);
   res.send(response);
 });
@@ -65,7 +84,8 @@ app.post('/getPacketInfo', function (req, res) {
 app.post('/packetTransfer', function (req, res) {
   const packetId = req.body.packetId;
   const receiverId = req.body.receiverId;
-  const data = "0" + packetId + receiverId;
+  const timestamp = req.body.timestamp;
+  const data = "0" + packetId + timestamp + receiverId;
 
   const parsed = JSON.parse(generateNewTransaction(data));
   const txid = '' + parsed.txid;
@@ -123,4 +143,19 @@ function hex_to_ascii(str1)
 	return str;
  }
 
+ function unix_to_date(UNIX_timestamp){
+  var a = new Date(UNIX_timestamp * 1000);
+  var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var year = a.getFullYear();
+  var month = months[a.getMonth()];
+  var date = a.getDate();
+  var hour = a.getHours();
+  var min = a.getMinutes();
+  var sec = a.getSeconds();
+  var time = date + ' ' + month + ' ' + year + ' ' + hour + ':' + min + ':' + sec ;
+  return time;
+}
 
+function rand(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
