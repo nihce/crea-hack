@@ -39,32 +39,27 @@ app.post('/postPacketInfo', function (req, res) {
 
 app.post('/getPacketInfo', function (req, res) {
   const packetId = req.body.packetId;
-  
-  var obj = new Object();
-  obj.name = "Raj";
-  obj.age  = 32;
-  obj.married = false;
-  var jsonString= JSON.stringify(obj);
+  let response = "Packet Number: " + packetId;
+  response += ",";
 
-  listOfTransactions.forEach(txid => {
-    const parsed = JSON.parse(getTransactionById(packetId));
-    const hex = '' + parsed.vout[0].scriptPubKey.hex.slice(6);
-    const ascii = hex_to_ascii(hex);
-    // console.log(ascii);
-    if (ascii.charAt(0)) {
-      obj.kind = "Packet Info";
-    } else {
-      obj.kind = "Packet Transfer"
-    }
-    obj.kind = ;
-    obj.age  = 32;
-    obj.married = false;
-  });
-
-
-  console.log("getPacketInfo called");
-  
-  res.json({note: 'OK'});
+  if (listOfTransactions && listOfTransactions.length) {    
+    listOfTransactions.forEach(txid => {      
+      const parsed = JSON.parse(getTransactionById(txid));
+      const hex = '' + parsed.vout[0].scriptPubKey.hex.slice(6);
+      const ascii = hex_to_ascii(hex);
+      if (parseInt(ascii.charAt(0))) {
+        response += "Packet Info: ";
+        response += ascii.substring(4, ascii.length);
+        response += ",";
+      } else {
+        response += "Packet Transfer: ";
+        response += ascii.substring(4, ascii.length);
+        response += ",";
+      }
+    });
+  }
+  // console.log("getPacketInfo called with: " + packetId);
+  res.send(response);
 });
 
 app.post('/packetTransfer', function (req, res) {
@@ -101,7 +96,7 @@ function generateNewTransaction(data) {
 }
 
 function getTransactionById(transactionId) {
-  const str = 'bin/bitcoin-cli -regtest gettransaction ' + transactionId;
+  const str = 'bin/getTxData.sh ' + transactionId;
   const tmp = shell.exec(str, {silent:false}).stdout;
   return tmp;
 }
