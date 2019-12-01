@@ -12,7 +12,7 @@ const shell = require('shelljs');
 //CONSTANTS
 const LENGTH_OF_TIMESTAMP = 10;
 const START_TIMESTAMP = 4;
-const END_TIMESTAMP = START_TIMESTAMP + LENGTH_OF_TIMESTAMP;
+const END_TIMESTAMP = 14;
 
 //SIMULATED DATABASE
 let listOfTransactions = []; 
@@ -21,8 +21,8 @@ let listOfTransactions = [];
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false}));
 
-// 0=PACKET INFO
-// 1=PACKET TRANSFER
+// 1=PACKET INFO
+// 0=PACKET TRANSFER
 
 app.post('/postPacketInfo', function (req, res) {
   // const packetId = req.body.packetId;
@@ -36,6 +36,8 @@ app.post('/postPacketInfo', function (req, res) {
   const parsed = JSON.parse(generateNewTransaction(data));
   const txid = '' + parsed.txid;
   listOfTransactions.push(txid);
+  console.log(listOfTransactions);
+  
 
   setTimeout(function() {
     generateBlock()
@@ -48,32 +50,49 @@ app.post('/getPacketInfo', function (req, res) {
   const packetId = req.body.packetId;
   let response = "Packet Number: " + packetId;
   response += ", ";
-  let temperatureBreach = 0;
+  let temperatureBreach = "NO";
 
   if (listOfTransactions && listOfTransactions.length) {    
     listOfTransactions.forEach(txid => {      
       const parsed = JSON.parse(getTransactionById(txid));
-      const hex = '' + parsed.vout[0].scriptPubKey.hex.slice(6);
-      const ascii = hex_to_ascii(hex);
-      if (parseInt(ascii.charAt(0))) {
-        const temperature = ascii.substring(END_TIMESTAMP, ascii.length);
+      console.log(("TAG == PARSED ==> "+parsed));
+      for (let index = 0; index < parsed.vout.length; index++) {
+        const element = parsed.vout[index];
+        console.log("TAG == ELEMENT ==> "+element);
+        
+        console.log("TAG == CONDITION ==> "+parseInt(element.value));
+        
+        if (parseInt(element.value) === 0) {
+          console.log("inside if");
+          const hex = '' + parsed.vout[index].scriptPubKey.hex.slice(6);
+          console.log(("TAG == HEX ==> "+hex));
+          
+          const ascii = hex_to_ascii(hex);
+          console.log("TAG == ASCII ==> "+ascii);
+          
+          if (parseInt(ascii.charAt(0))) {
+            const temperature = ascii.substring(END_TIMESTAMP, ascii.length);
 
-        if (temperature > 8.0) {
-          temperatureBreach = 1;
+            if (temperature > 8.0) {
+              temperatureBreach = "YES";
+            }
+            const timestamp = unix_to_date(ascii.substring(START_TIMESTAMP, 18));
+            response += "Packet Temperature: ";
+            response += temperature;
+            response += " [" + timestamp + "]";
+            response += ", ";
+          } else {
+            const packetId = ascii.substring(END_TIMESTAMP, ascii.length);
+            const timestamp = unix_to_date(ascii.substring(START_TIMESTAMP, END_TIMESTAMP));
+            response += "Packet Transfared To: ";
+            response += packetId;
+            response += " [" + timestamp + "]";
+            response += ", ";
+          }
         }
-        const timestamp = unix_to_date(ascii.substring(START_TIMESTAMP, END_TIMESTAMP));
-        response += "Packet Temperature: ";
-        response += temperature;
-        response += " [" + timestamp + "]";
-        response += ", ";
-      } else {
-        const temperature = ascii.substring(END_TIMESTAMP, ascii.length);
-        const timestamp = unix_to_date(ascii.substring(START_TIMESTAMP, END_TIMESTAMP));
-        response += "Packet Transfared To: ";
-        response += temperature;
-        response += " [" + timestamp + "]";
-        response += ", ";
+        
       }
+      
     });
   }
   response = response + "temperatureBreach: " + temperatureBreach;
@@ -86,6 +105,8 @@ app.post('/packetTransfer', function (req, res) {
   const receiverId = req.body.receiverId;
   const timestamp = req.body.timestamp;
   const data = "0" + packetId + timestamp + receiverId;
+  console.log("TAG1 ========> "+data);
+  
 
   const parsed = JSON.parse(generateNewTransaction(data));
   const txid = '' + parsed.txid;
